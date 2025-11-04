@@ -41,6 +41,15 @@ class Player(Sprite):
         self.jumping = False
         self.current_frame = 0
         self.last_update = 0
+        self.jump_power = 100
+    def jump(self):
+        print('trying to jump')
+        self.rect.y += 1
+        hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
+        self.rect.y += -1
+        if hits:
+            print('collided with floor')
+            self.vel.y = -self.jump_power
     def load_images(self):
         self.standing_frames = [self.spritesheet.get_image(0, 0, 32, 32),
                                 self.spritesheet.get_image(0, 32, 32, 32)]
@@ -63,9 +72,12 @@ class Player(Sprite):
                 self.rect.bottom = bottom
     def get_keys(self):
         ######################## mr cozort made a mistake :( #############
-        self.vel = vec(0,0)
+        self.vel = vec(0,GRAVITY)
         keys = pg.key.get_pressed()
+        
         if keys[pg.K_SPACE]:
+            self.jump()
+        if keys[pg.K_e]:
             print(self.rect.x)
             p = Projectile(self.game, self.rect.x, self.rect.y, self.dir)
         if keys[pg.K_w]:

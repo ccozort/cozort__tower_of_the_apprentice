@@ -36,19 +36,21 @@ class Player(Sprite):
         self.health = 100
         self.coins = 0
         self.cd = Cooldown(1000)
+        self.weapon_cd = Cooldown(400)
         self.dir = vec(0,0)
         self.walking = False
         self.jumping = False
         self.current_frame = 0
         self.last_update = 0
         self.jump_power = 100
+        self.attacking = False
     def jump(self):
-        print('trying to jump')
+        # print('trying to jump')
         self.rect.y += 1
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         self.rect.y += -1
         if hits:
-            print('collided with floor')
+            # print('collided with floor')
             self.vel.y = -self.jump_power
     def load_images(self):
         self.standing_frames = [self.spritesheet.get_image(0, 0, 32, 32),
@@ -63,13 +65,18 @@ class Player(Sprite):
         now = pg.time.get_ticks()
         if not self.jumping and not self.walking:
             if now - self.last_update > 350:
-                print(now)
+                # print(now)
                 self.last_update = now
                 self.current_frame = (self.current_frame + 1) % len(self.standing_frames)
                 bottom = self.rect.bottom
                 self.image = self.standing_frames[self.current_frame]
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
+    
+
+
+
+    
     def get_keys(self):
         ######################## mr cozort made a mistake :( #############
         self.vel = vec(0,GRAVITY)
@@ -92,11 +99,18 @@ class Player(Sprite):
         if keys[pg.K_d]:
             self.vel.x = self.speed*self.game.dt
             self.dir = vec(1,0)
+        # if keys[pg.K_k]:
+        #     self.attack()
+
         # accounting for diagonal
         if self.vel[0] != 0 and self.vel[1] != 0:
             self.vel *= 0.7071
     
-        
+    # def attack(self):
+    #     if self.weapon_cd.ready() and not self.attacking:
+    #         self.weapon_cd.start()
+    #         self.attacking = True
+
     def collide_with_walls(self, dir):
         if dir == 'x':
             hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
@@ -170,6 +184,8 @@ class Player(Sprite):
         self.collide_with_walls('y')
         self.collide_with_stuff(self.game.all_mobs, False)
         self.collide_with_stuff(self.game.all_coins, True)
+        # print(self.weapon_cd.ready())
+        print(self.attacking)
         # # print(self.cd.ready())
         # if not self.cd.ready():
         #     self.image = self.game.player_img_inv
@@ -195,8 +211,19 @@ class Mob(Sprite):
         self.pos = vec(x,y)*TILESIZE[0]
         # self.rect.x = x * TILESIZE[0]
         # self.rect.y = y * TILESIZE[1]
+        self.health = 100
         self.speed = 5
         print(self.pos)
+        self.cd = Cooldown(300)
+    
+    def collide_with_stuff(self, group, kill):
+        hits = pg.sprite.spritecollide(self, group, kill)
+        if hits: 
+            if str(hits[0].__class__.__name__) == "Sword":
+                if self.cd.ready():
+                    self.health -= 50
+                    self.cd.start()
+                    print("enemy health is", str(self.health))
     def collide_with_walls(self, dir):
         if dir == 'x':
             hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
@@ -218,22 +245,33 @@ class Mob(Sprite):
                 self.rect.y = self.pos.y
                 self.vel.y *= choice([-1,1])
     def update(self):
+        if self.health <= 0:
+            self.kill()
         # mob behavior
-        if self.game.player.pos.x > self.pos.x:
-            self.vel.x = 1
-        else:
-            self.vel.x = -1
-            # print("I don't need to chase the player x")
-        if self.game.player.pos.y > self.pos.y:
-            self.vel.y = 1
-        else:
-            self.vel.y = -1
+        # if self.game.player.pos.x > self.pos.x:
+        #     self.vel.x = 1
+        # else:
+        #     self.vel.x = -1
+        #     # print("I don't need to chase the player x")
+        # if self.game.player.pos.y > self.pos.y:
+        #     self.vel.y = 1
+        # else:
+        #     self.vel.y = -1
             # print("I don't need to chase the player x")
         self.pos += self.vel * self.speed
         self.rect.x = self.pos.x
         self.collide_with_walls('x')
         self.rect.y = self.pos.y
         self.collide_with_walls('y')
+        self.collide_with_stuff(self.game.all_weapons, False)
+         # print(self.cd.ready())
+        if not self.cd.ready():
+            self.image.fill(RED)
+            print("not ready")
+        else:
+            self.image.fill(GREEN)
+            # self.rect = self.image.get_rect()
+            print("ready")
 
 class Coin(Sprite):
     def __init__(self, game, x, y):
@@ -247,6 +285,26 @@ class Coin(Sprite):
         self.rect.y = y *TILESIZE[1]
         # coin behavior
         pass
+
+class Sword(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self.groups = game.all_sprites, game.all_weapons
+        Sprite.__init__(self, self.groups)
+        self.image = pg.Surface((TILESIZE[0]*2,TILESIZE[1]//2))
+        self.image.fill(WHITE)
+        self.rect = self.image.get_rect()
+        self.rect.x = x * TILESIZE[0]
+        self.rect.y = y *TILESIZE[1]
+    def update(self):
+        self.rect.x = self.game.player.rect.x + self.game.player.dir.x * 32
+        if self.game.player.dir.x < 0:
+            self.rect.x = self.game.player.rect.x + self.game.player.dir.x * 64
+            # pg.transform.flip(self.image, True, False)
+        self.rect.y = self.game.player.rect.y
+
+
+
 class Wall(Sprite):
     def __init__(self, game, x, y, state):
         self.groups = game.all_sprites, game.all_walls
@@ -267,9 +325,9 @@ class Wall(Sprite):
                 
                 # print(self.pos)
                 if self.vel.x > 0:
-                    print("a wall collided with a wall")
+                    # print("a wall collided with a wall")
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].pos.x += self.vel.x
                         if len(hits) > 1:
                             if hits[1].state == "unmoveable":
@@ -279,7 +337,7 @@ class Wall(Sprite):
                         
                 if self.vel.x < 0:
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].pos.x += self.vel.x
                         if len(hits) > 1:
                             if hits[1].state == "unmoveable":
@@ -294,9 +352,9 @@ class Wall(Sprite):
                 # print(self.pos)
                 
                 if self.vel.y > 0:
-                    print('wall y collide down')
+                    # print('wall y collide down')
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].pos.y += self.vel.y
                         if len(hits) > 1:
                             if hits[1].state == "unmoveable":
@@ -306,7 +364,7 @@ class Wall(Sprite):
                         
                 if self.vel.y < 0:
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].pos.y += self.vel.y
                         if len(hits) > 1:
                             if hits[1].state == "unmovable":

@@ -49,6 +49,7 @@ class Game:
       self.all_coins = pg.sprite.Group()
       self.all_walls = pg.sprite.Group()
       self.all_projectiles = pg.sprite.Group()
+      self.all_weapons = pg.sprite.Group()
       for row, tiles, in enumerate(self.map.data):
          # print(row)
          for col, tile, in enumerate(tiles):
@@ -63,7 +64,6 @@ class Game:
                self.player = Player(self, col, row)
             elif tile == 'M':
                Mob(self, col, row)
-     
      
    def run(self):
       while self.playing == True:
@@ -83,6 +83,14 @@ class Game:
           self.playing = False
         if event.type == pg.MOUSEBUTTONDOWN:
            print("I can get input from mousey mouse mouse mousekerson")
+        if event.type == pg.KEYDOWN:
+           if event.key == pg.K_k:
+              self.player.attacking = True
+              self.player.weapon = Sword(self, self.player.rect.x, self.player.rect.y)
+        if event.type == pg.KEYUP:
+           if event.key == pg.K_k:
+              self.player.attacking = False
+              self.player.weapon.kill()
    def update(self):
       self.all_sprites.update()
       seconds = pg.time.get_ticks()//1000
@@ -102,7 +110,7 @@ class Game:
         text_rect.midtop = (x,y)
         surface.blit(text_surface, text_rect)
    def draw(self):
-      self.screen.fill(WHITE)
+      # self.screen.fill(WHITE)
       self.screen.blit(self.bg_img, (0,0))
       self.draw_text(self.screen, str(self.player.health), 24, BLACK, 100, 100)
       self.draw_text(self.screen, str(self.player.coins), 24, BLACK, 400, 100)

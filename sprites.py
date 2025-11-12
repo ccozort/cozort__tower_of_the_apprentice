@@ -37,6 +37,7 @@ class Player(Sprite):
         self.coins = 0
         self.cd = Cooldown(1000)
         self.weapon_cd = Cooldown(400)
+        self.effect_cd = Cooldown(200)
         self.dir = vec(0,0)
         self.walking = False
         self.jumping = False
@@ -44,6 +45,7 @@ class Player(Sprite):
         self.last_update = 0
         self.jump_power = 100
         self.attacking = False
+        self.facing = ""
     def jump(self):
         # print('trying to jump')
         self.rect.y += 1
@@ -93,12 +95,20 @@ class Player(Sprite):
         if keys[pg.K_a]:
             self.vel.x = -self.speed*self.game.dt
             self.dir = vec(-1,0)
+            if self.facing != "right":
+                self.facing = "right"
+                self.flipped_img = pg.transform.flip(self.image, True, False)
+            self.image = self.flipped_img
         if keys[pg.K_s]:
             self.vel.y = self.speed*self.game.dt
             self.dir = vec(0,1)
         if keys[pg.K_d]:
             self.vel.x = self.speed*self.game.dt
             self.dir = vec(1,0)
+            if self.facing != "left":
+                self.facing = "left"
+                self.flipped_img = pg.transform.flip(self.image, True, False)
+            self.image = self.flipped_img
         # if keys[pg.K_k]:
         #     self.attack()
 
@@ -110,6 +120,9 @@ class Player(Sprite):
     #     if self.weapon_cd.ready() and not self.attacking:
     #         self.weapon_cd.start()
     #         self.attacking = True
+    def effects_trail(self):
+        if self.effect_cd.ready():
+            EffectTrail(self.game, self.rect.x,self.rect.y)
 
     def collide_with_walls(self, dir):
         if dir == 'x':
@@ -175,8 +188,9 @@ class Player(Sprite):
                 print(self.coins)
 
     def update(self):
+        self.effects_trail()
         self.get_keys()
-        self.animate()
+        # self.animate()
         self.pos += self.vel
         self.rect.x = self.pos.x
         self.collide_with_walls('x')
@@ -186,6 +200,7 @@ class Player(Sprite):
         self.collide_with_stuff(self.game.all_coins, True)
         # print(self.weapon_cd.ready())
         print(self.attacking)
+
         # # print(self.cd.ready())
         # if not self.cd.ready():
         #     self.image = self.game.player_img_inv
@@ -204,8 +219,9 @@ class Mob(Sprite):
         self.groups = game.all_sprites, game.all_mobs
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = pg.Surface((32, 32))
-        self.image.fill(RED)
+        self.image = pg.Surface((32, 32), pg.SRCALPHA)
+        self.fade = 255
+        self.image.fill((255,0,0,50))
         self.rect = self.image.get_rect()
         self.vel = vec(choice([-1,1]),choice([-1,1]))
         self.pos = vec(x,y)*TILESIZE[0]
@@ -214,7 +230,7 @@ class Mob(Sprite):
         self.health = 100
         self.speed = 5
         print(self.pos)
-        self.cd = Cooldown(300)
+        self.cd = Cooldown(1000)
     
     def collide_with_stuff(self, group, kill):
         hits = pg.sprite.spritecollide(self, group, kill)
@@ -266,10 +282,10 @@ class Mob(Sprite):
         self.collide_with_stuff(self.game.all_weapons, False)
          # print(self.cd.ready())
         if not self.cd.ready():
-            self.image.fill(RED)
+            self.image.fill((255,0,0,150))
             print("not ready")
         else:
-            self.image.fill(GREEN)
+            self.image.fill((0,255,0,255))
             # self.rect = self.image.get_rect()
             print("ready")
 
@@ -285,6 +301,36 @@ class Coin(Sprite):
         self.rect.y = y *TILESIZE[1]
         # coin behavior
         pass
+
+class EffectTrail(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.image = pg.Surface(TILESIZE, pg.SRCALPHA)
+        self.alpha = 255
+        self.image.fill((255,255,255,255))
+        self.rect = self.image.get_rect()
+        self.cd = Cooldown(10)
+        self.rect.x = x
+        self.rect.y = y
+        # coin behavior
+        self.scale_x = 32
+        self.scale_y = 32
+    def update(self):
+        if self.alpha <= 10:
+            self.kill()
+        self.image.fill((255,255,255,self.alpha))
+        
+        if self.cd.ready():
+            self.scale_x -=1
+            self.scale_y -=1
+            print("I'm ready")
+            self.alpha -= 50
+            new_image = pg.transform.scale(self.image, (self.scale_x, self.scale_y))
+            self.image = new_image
+
+
 
 class Sword(Sprite):
     def __init__(self, game, x, y):

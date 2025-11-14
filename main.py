@@ -65,9 +65,7 @@ class Game:
                self.player = Player(self, col, row)
             elif tile == 'M':
                Mob(self, col, row)
-            elif tile == 'R':
-               ArcRotatingSprite(self, (0, 16), (self.player.pos.x,self.player.pos.y), 0)
-     
+    
    def run(self):
       while self.playing == True:
          self.dt = self.clock.tick(FPS) / 1000
@@ -75,7 +73,7 @@ class Game:
          self.events()
          # process
          self.update()
-         # output
+         # outputd
          self.draw()
       pg.quit()
 

@@ -78,10 +78,6 @@ class Player(Sprite):
                 self.rect = self.image.get_rect()
                 self.rect.bottom = bottom
     
-
-
-
-    
     def get_keys(self):
         ######################## mr cozort made a mistake :( #############
         self.vel = vec(0,GRAVITY)
@@ -90,8 +86,11 @@ class Player(Sprite):
         if keys[pg.K_SPACE]:
             self.jump()
         if keys[pg.K_e]:
-            print(self.rect.x)
+            # print(self.rect.x)
             p = Projectile(self.game, self.rect.x, self.rect.y, self.dir)
+        if keys[pg.K_f]:
+            # print(self.rect.x)
+            SpinningSword(self.game, self)
         if keys[pg.K_w]:
             self.vel.y = -self.speed*self.game.dt
             self.dir = vec(0,-1)
@@ -134,7 +133,7 @@ class Player(Sprite):
                 # print(self.pos)
                 if self.vel.x > 0:
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].vel.x += self.vel.x
                         if len(hits) > 1:
                             if hits[1].state == "unmoveable":
@@ -144,7 +143,7 @@ class Player(Sprite):
                         
                 if self.vel.x < 0:
                     if hits[0].state == "moveable":
-                        print("i hit a moveable block...")
+                        # print("i hit a moveable block...")
                         hits[0].vel.x += self.vel.x
                     else:
                         self.pos.x = hits[0].rect.right
@@ -188,7 +187,7 @@ class Player(Sprite):
                 # print("Ouch!")
             if str(hits[0].__class__.__name__) == "Coin":
                 self.coins += 1
-                print(self.coins)
+                # print(self.coins)
 
     def update(self):
         # self.effects_trail()
@@ -202,7 +201,7 @@ class Player(Sprite):
         self.collide_with_stuff(self.game.all_mobs, False)
         self.collide_with_stuff(self.game.all_coins, True)
         # print(self.weapon_cd.ready())
-        print(self.attacking)
+        # print(self.attacking)
 
         # # print(self.cd.ready())
         # if not self.cd.ready():
@@ -214,103 +213,111 @@ class Player(Sprite):
         #     self.image = self.game.player_img
         #     # self.rect = self.image.get_rect()
         #     print("ready")
-import pygame
-import math
 
-
-# ... (Pygame initialization and loading original_image) ...
-
-class ArcRotatingSprite(pygame.sprite.Sprite):
-    def __init__(self, game, pivot_offset, arc_center, arc_radius):
+class SpinningSword(pg.sprite.Sprite):
+    def __init__(self, game, owner, orbit_radius=50, start_angle=0):
         self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.game = game
-        self.image = game.sword_img
-        self.original_image = self.image.convert_alpha()
-        self.image = self.original_image
-        self.pivot_offset = pivot_offset  # (x_offset, y_offset) from topleft of image
-        self.arc_center = arc_center
-        self.arc_radius = arc_radius
-        self.current_angle = 0  # For sprite rotation
-        self.current_arc_angle = 0 # For arc movement
+        self.owner = owner  # Player (or any object with .pos)
+
+        # --- base image (dummy sword: long red rectangle) ---
+        w, h = 60, 12
+        self.base_image = pg.Surface((w, h), pg.SRCALPHA)
+        self.base_image.fill(RED)
+
+        # Define the local pivot on the sword image (the hilt)
+        # Here we say the hilt is near the left side, centered vertically
+        rect = self.base_image.get_rect()
+        self.local_pivot = pg.math.Vector2(rect.left, rect.centery)
+
+        # Vector from pivot (hilt) to the image center in local space
+        self.pivot_to_center = pg.math.Vector2(rect.center) - self.local_pivot
+
+        self.image = self.base_image
         self.rect = self.image.get_rect()
-        self.spin_speed = 250
 
+        # Orbit info
+        self.orbit_radius = orbit_radius
+        self.angle = start_angle      # degrees around the player
+        self.spin_speed = 360         # degrees per second (how fast it orbits)
+
+        # Extra offset to make the sword point outward properly
+        # (tweak as needed; 0, 90, 180, etc.)
+        self.orientation_offset = 32
+        print("spinnging sword created")
     def update(self):
-        # Update sprite rotation
-        self.current_angle = (self.current_angle + 5 * self.game.dt) % 360  # Example rotation speed
-        # self.current_angle = 90
-        self.image = pygame.transform.rotate(self.original_image, self.current_angle)
-        
-        # Calculate new rect based on rotation and pivot
-        old_center = self.rect.center
-        self.rect = self.image.get_rect(center=old_center)
-        
-        # Adjust for pivot offset
-        # This part requires more precise calculation based on your pivot_offset
-        # For a bottom-center pivot:
-        pivot_on_rotated_image = (self.image.get_width() / 2, self.image.get_height())
-        offset_x = self.pivot_offset[0] - pivot_on_rotated_image[0]
-        offset_y = self.pivot_offset[1] - pivot_on_rotated_image[1]
-        
-        # Update arc movement
-        self.current_arc_angle = (self.current_arc_angle + 0.05 * self.game.dt) % (2 * math.pi) # Example arc speed
-        arc_pivot_x = self.arc_center[0] + self.arc_radius * 2 * math.cos(self.current_arc_angle)
-        arc_pivot_y = self.arc_center[1] + self.arc_radius * 2 *  math.sin(self.current_arc_angle)
+        # 1. Update orbit angle around the player
+        self.angle += self.spin_speed * self.game.dt
 
-        self.rect.centerx = arc_pivot_x - offset_x
-        self.rect.centery = arc_pivot_y - offset_y
+        # 2. Compute where the sword's pivot (hilt) should be in world space
+        #    Orbit in a circle around the player's center
+        orbit_offset = pg.math.Vector2(self.orbit_radius, 0).rotate(self.angle)
+        sword_pivot_world = self.owner.pos + orbit_offset
 
+        # 3. Rotate the sword image around its own pivot (hilt)
+        image_angle = -self.angle + self.orientation_offset
+        self.image = pg.transform.rotate(self.base_image, image_angle)
 
+        # 4. Rotate the pivot->center offset by the same angle so the rect lines up
+        rotated_pivot_to_center = self.pivot_to_center.rotate(image_angle)
 
-
-
-class RotatingSprite(Sprite):
-    def __init__(self, game,pivot_pos, radius, angle_offset=0, rotate_with_orbit=False):
-        self.groups = game.all_sprites
-        Sprite.__init__(self, self.groups)
+        # 5. Final sprite center = pivot_world + rotated offset
+        self.rect = self.image.get_rect(center=sword_pivot_world + rotated_pivot_to_center)
+class SpinningSword(pg.sprite.Sprite):
+    def __init__(self, game, player):
         self.game = game
-        
-        self.image = game.sword_img
-        self.original_image = self.image.convert_alpha()
+        self.groups = game.all_sprites, game.all_mobs
+        Sprite.__init__(self, self.groups)
+        self.player = player
+        # Create a simple sword image (a thin rectangle)
+        self.scale_x = 5
+        self.scale_y = 50
+        self.original_image = pg.Surface([self.scale_x, self.scale_y], pg.SRCALPHA)
+        self.original_image.fill((255,255,255,255))
         self.image = self.original_image
-        
-
-        self.pivot = pygame.Vector2(pivot_pos)   # rotation center
-        self.radius = radius                     # distance from pivot
-        self.angle = angle_offset                # start angle in radians
-        self.rotate_with_orbit = rotate_with_orbit
-
-        # image info
-        self.image_w = self.original_image.get_width()
-        self.image_h = self.original_image.get_height()
-
-        # bottom-center of the sprite (its rotation anchor)
-        self.local_pivot = pygame.Vector2(self.image_w // 2, self.image_h)
-
         self.rect = self.image.get_rect()
-        self.speed = 1
-
+        self.angle = 0 # Initial angle
+        self.radius = 40 # Distance from player center
+        self.pivot_offset = pg.math.Vector2(0, -self.radius) # The vector to rotate
+        self.cd = Cooldown(10)
+        self.alpha = 255
+        print('spinning sword created')
+        
     def update(self):
-        """Rotate around the pivot. Speed is radians per frame."""
-        self.angle += self.speed
+        if self.alpha <= 10:
+            self.kill()
+        if self.alpha:
+            self.image.fill((255,255,255,self.alpha))
+        if self.cd.ready():
+            # self.scale_x -=1
+            # self.scale_y -=1
+            self.alpha -= 10
+            # new_image = pg.transform.scale(self.image, (self.scale_x, self.scale_y))
+            # self.image = new_image
+        # Increment the angle for continuous rotation
+        # if self.alpha >= 10:
+        #     self.image.fill((255,255,255,self.alpha))
 
-        # Orbit position
-        pos_x = self.game.player.pos.x + 16 + math.cos(self.angle) * self.radius
-        pos_y = self.game.player.pos.y + 16 + math.sin(self.angle) * self.radius
-        # pos_x = self.pivot.x + math.cos(self.angle) * self.radius
-        # pos_y = self.pivot.y + math.sin(self.angle) * self.radius
+        self.angle = (self.angle + 45) % 360 # Adjust rotation speed here
+        if self.angle >= 360:
+            self.angle = 0 # Reset angle to prevent overflow
 
-        # Rotate the sprite's image if desired
-        if self.rotate_with_orbit:
-            rot_deg = -math.degrees(self.angle)  # negative to rotate correctly
-            self.image = pygame.transform.rotate(self.original_image, rot_deg)
-        else:
-            self.image = self.original_image
-
-        # Update rect
-        self.rect = self.image.get_rect(center=(pos_x, pos_y))
-
+        # Rotate the offset vector to calculate the new position
+        rotated_offset = self.pivot_offset.rotate(self.angle)
+        
+        # Calculate the final position of the sword's center
+        self.rect.center = self.player.rect.center + rotated_offset
+        
+        # Rotate the sword image itself to match its direction
+        # The angle for pygame.transform.rotate is counterclockwise
+        # and we need to offset it to match our coordinate system/image orientation
+        rotation_angle_for_image = -self.angle - 180 # Adjust the 90-degree offset based on your sword image
+        self.image = pg.Surface([self.scale_x, self.scale_y], pg.SRCALPHA)
+        self.image = pg.transform.rotate(self.original_image, rotation_angle_for_image)
+        
+        # Get a new rect with the correct center position after rotation
+        self.rect = self.image.get_rect(center=self.rect.center)
 
 class Mob(Sprite):
     def __init__(self, game, x, y):
@@ -382,11 +389,11 @@ class Mob(Sprite):
          # print(self.cd.ready())
         if not self.cd.ready():
             self.image.fill((255,0,0,150))
-            print("not ready")
+            # print("not ready")
         else:
             self.image.fill((0,255,0,255))
             # self.rect = self.image.get_rect()
-            print("ready")
+            # print("ready")
 
 class Coin(Sprite):
     def __init__(self, game, x, y):

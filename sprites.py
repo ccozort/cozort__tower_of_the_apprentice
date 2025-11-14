@@ -46,6 +46,9 @@ class Player(Sprite):
         self.jump_power = 100
         self.attacking = False
         self.facing = ""
+    
+    def rotate(self):
+        pass
     def jump(self):
         # print('trying to jump')
         self.rect.y += 1
@@ -188,7 +191,7 @@ class Player(Sprite):
                 print(self.coins)
 
     def update(self):
-        self.effects_trail()
+        # self.effects_trail()
         self.get_keys()
         # self.animate()
         self.pos += self.vel
@@ -211,6 +214,102 @@ class Player(Sprite):
         #     self.image = self.game.player_img
         #     # self.rect = self.image.get_rect()
         #     print("ready")
+import pygame
+import math
+
+
+# ... (Pygame initialization and loading original_image) ...
+
+class ArcRotatingSprite(pygame.sprite.Sprite):
+    def __init__(self, game, pivot_offset, arc_center, arc_radius):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        self.image = game.sword_img
+        self.original_image = self.image.convert_alpha()
+        self.image = self.original_image
+        self.pivot_offset = pivot_offset  # (x_offset, y_offset) from topleft of image
+        self.arc_center = arc_center
+        self.arc_radius = arc_radius
+        self.current_angle = 0  # For sprite rotation
+        self.current_arc_angle = 0 # For arc movement
+        self.rect = self.image.get_rect()
+        self.spin_speed = 250
+
+    def update(self):
+        # Update sprite rotation
+        self.current_angle = (self.current_angle + 5 * self.game.dt) % 360  # Example rotation speed
+        # self.current_angle = 90
+        self.image = pygame.transform.rotate(self.original_image, self.current_angle)
+        
+        # Calculate new rect based on rotation and pivot
+        old_center = self.rect.center
+        self.rect = self.image.get_rect(center=old_center)
+        
+        # Adjust for pivot offset
+        # This part requires more precise calculation based on your pivot_offset
+        # For a bottom-center pivot:
+        pivot_on_rotated_image = (self.image.get_width() / 2, self.image.get_height())
+        offset_x = self.pivot_offset[0] - pivot_on_rotated_image[0]
+        offset_y = self.pivot_offset[1] - pivot_on_rotated_image[1]
+        
+        # Update arc movement
+        self.current_arc_angle = (self.current_arc_angle + 0.05 * self.game.dt) % (2 * math.pi) # Example arc speed
+        arc_pivot_x = self.arc_center[0] + self.arc_radius * 2 * math.cos(self.current_arc_angle)
+        arc_pivot_y = self.arc_center[1] + self.arc_radius * 2 *  math.sin(self.current_arc_angle)
+
+        self.rect.centerx = arc_pivot_x - offset_x
+        self.rect.centery = arc_pivot_y - offset_y
+
+
+
+
+
+class RotatingSprite(Sprite):
+    def __init__(self, game,pivot_pos, radius, angle_offset=0, rotate_with_orbit=False):
+        self.groups = game.all_sprites
+        Sprite.__init__(self, self.groups)
+        self.game = game
+        
+        self.image = game.sword_img
+        self.original_image = self.image.convert_alpha()
+        self.image = self.original_image
+        
+
+        self.pivot = pygame.Vector2(pivot_pos)   # rotation center
+        self.radius = radius                     # distance from pivot
+        self.angle = angle_offset                # start angle in radians
+        self.rotate_with_orbit = rotate_with_orbit
+
+        # image info
+        self.image_w = self.original_image.get_width()
+        self.image_h = self.original_image.get_height()
+
+        # bottom-center of the sprite (its rotation anchor)
+        self.local_pivot = pygame.Vector2(self.image_w // 2, self.image_h)
+
+        self.rect = self.image.get_rect()
+        self.speed = 1
+
+    def update(self):
+        """Rotate around the pivot. Speed is radians per frame."""
+        self.angle += self.speed
+
+        # Orbit position
+        pos_x = self.game.player.pos.x + 16 + math.cos(self.angle) * self.radius
+        pos_y = self.game.player.pos.y + 16 + math.sin(self.angle) * self.radius
+        # pos_x = self.pivot.x + math.cos(self.angle) * self.radius
+        # pos_y = self.pivot.y + math.sin(self.angle) * self.radius
+
+        # Rotate the sprite's image if desired
+        if self.rotate_with_orbit:
+            rot_deg = -math.degrees(self.angle)  # negative to rotate correctly
+            self.image = pygame.transform.rotate(self.original_image, rot_deg)
+        else:
+            self.image = self.original_image
+
+        # Update rect
+        self.rect = self.image.get_rect(center=(pos_x, pos_y))
 
 
 class Mob(Sprite):

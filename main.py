@@ -37,6 +37,7 @@ class Game:
       self.map = Map(path.join(self.game_folder, 'level1.txt'))
       # loads image into memory when a new game is created and load_data is called
       self.player_img = pg.image.load(path.join(self.img_folder, 'side_bell.png')).convert_alpha()
+      self.sword_img = pg.image.load(path.join(self.img_folder, 'sword.png')).convert_alpha()
       self.player_img_inv = pg.image.load(path.join(self.img_folder, 'the_bell_16x16.png')).convert_alpha()
       self.bg_img = pg.image.load(path.join(self.img_folder, 'starry_bg.png')).convert_alpha()
       self.bg_img = pg.transform.scale(self.bg_img, (WIDTH, HEIGHT))
@@ -64,6 +65,8 @@ class Game:
                self.player = Player(self, col, row)
             elif tile == 'M':
                Mob(self, col, row)
+            elif tile == 'R':
+               ArcRotatingSprite(self, (0, 16), (self.player.pos.x,self.player.pos.y), 0)
      
    def run(self):
       while self.playing == True:
@@ -110,7 +113,7 @@ class Game:
         text_rect.midtop = (x,y)
         surface.blit(text_surface, text_rect)
    def draw(self):
-      # self.screen.fill(WHITE)
+      self.screen.fill(WHITE)
       self.screen.blit(self.bg_img, (0,0))
       self.draw_text(self.screen, str(self.player.health), 24, BLACK, 100, 100)
       self.draw_text(self.screen, str(self.player.coins), 24, BLACK, 400, 100)

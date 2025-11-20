@@ -54,6 +54,7 @@ class Player(Sprite):
         self.rect.y += 1
         hits = pg.sprite.spritecollide(self, self.game.all_walls, False)
         self.rect.y += -1
+        self.game.jump_sound.play()
         if hits:
             # print('collided with floor')
             self.vel.y = -self.jump_power

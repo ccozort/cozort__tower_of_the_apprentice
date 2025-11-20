@@ -23,6 +23,7 @@ from math import floor
 class Game:
    def __init__(self):
       pg.init()
+      pg.mixer.init()
       self.clock = pg.time.Clock()
       self.screen = pg.display.set_mode((WIDTH, HEIGHT))
       pg.display.set_caption("Chris Cozort's awesome game!!!!!")
@@ -34,6 +35,8 @@ class Game:
    def load_data(self):
       self.game_folder = path.dirname(__file__)
       self.img_folder = path.join(self.game_folder, 'images')
+      self.snd_folder = path.join(self.game_folder, 'sounds')
+      self.jump_sound = pg.mixer.Sound(path.join(self.snd_folder, 'Jump33.wav'))
       self.map = Map(path.join(self.game_folder, 'level1.txt'))
       # loads image into memory when a new game is created and load_data is called
       self.player_img = pg.image.load(path.join(self.img_folder, 'side_bell.png')).convert_alpha()
@@ -65,7 +68,8 @@ class Game:
                self.player = Player(self, col, row)
             elif tile == 'M':
                Mob(self, col, row)
-    
+      pg.mixer.music.load(path.join(self.snd_folder, 'Happy Tune.ogg'))
+      pg.mixer.music.play(loops=-1)
    def run(self):
       while self.playing == True:
          self.dt = self.clock.tick(FPS) / 1000

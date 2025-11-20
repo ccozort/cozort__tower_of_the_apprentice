@@ -329,7 +329,8 @@ class Mob(Sprite):
         self.fade = 255
         self.image.fill((255,0,0,50))
         self.rect = self.image.get_rect()
-        self.vel = vec(choice([-1,1]),choice([-1,1]))
+        # self.vel = vec(choice([-1,1]),choice([-1,1]))
+        self.vel = vec(0,0)
         self.pos = vec(x,y)*TILESIZE[0]
         # self.rect.x = x * TILESIZE[0]
         # self.rect.y = y * TILESIZE[1]
@@ -366,9 +367,27 @@ class Mob(Sprite):
                     self.pos.y = hits[0].rect.bottom
                 self.rect.y = self.pos.y
                 self.vel.y *= choice([-1,1])
+       
+        
+        
+    def movement(self):
+        if self.pos.x > 900:
+             self.vel = vec(0,1)
+             if self.pos.y > 650:
+                self.vel = vec(-1,0)
+        if self.pos.x < 100 :
+            self.vel = vec(0,-1)
+            if self.pos.y < 100:
+                self.vel = vec(1,0)
+        
+
+        
+
     def update(self):
+        self.movement()
         if self.health <= 0:
             self.kill()
+        
         # mob behavior
         # if self.game.player.pos.x > self.pos.x:
         #     self.vel.x = 1

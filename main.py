@@ -27,7 +27,7 @@ class Game:
       self.screen = pg.display.set_mode((WIDTH, HEIGHT))
       pg.display.set_caption("Chris Cozort's awesome game!!!!!")
       self.playing = True
-   
+      self.running = True
    # sets up a game folder directory path using the current folder containing THIS file
    # give the Game class a map property which uses the Map class to parse the level1.txt file
    # loads image files from images folder
@@ -81,7 +81,9 @@ class Game:
       for event in pg.event.get():
         if event.type == pg.QUIT:
          #  print("this is happening")
-          self.playing = False
+            if self.playing:
+               self.playing = False
+            self.running = False
         if event.type == pg.MOUSEBUTTONDOWN:
            print("I can get input from mousey mouse mouse mousekerson")
         if event.type == pg.KEYDOWN:
@@ -119,9 +121,29 @@ class Game:
       self.all_sprites.draw(self.screen)
       pg.display.flip()
 
-
+   def wait_for_key(self):
+        waiting = True
+        while waiting:
+            self.clock.tick(FPS)
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    waiting = False
+                    self.running = False
+                if event.type == pg.KEYUP:
+                    waiting = False
+   def show_start_screen(self):
+        # game splash/start screen
+      #   pg.mixer.music.load(path.join(self.snd_dir, 'Yippee.ogg'))
+      #   pg.mixer.music.play(loops=-1)
+        self.screen.fill(BLACK)
+        self.draw_text(self.screen,"Hello there!", 48, WHITE, WIDTH / 2, HEIGHT / 4)
+        pg.display.flip()
+        self.wait_for_key()
+        pg.mixer.music.fadeout(500)
 if __name__ == "__main__":
 #    creating an instance or instantiating the Game class
    g = Game()
-   g.new()
-   g.run()
+   g.show_start_screen()
+   while g.running:
+      g.new()
+      g.run()

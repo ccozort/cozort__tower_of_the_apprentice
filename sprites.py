@@ -189,6 +189,9 @@ class Player(Sprite):
             if str(hits[0].__class__.__name__) == "Coin":
                 self.coins += 1
                 # print(self.coins)
+            if str(hits[0].__class__.__name__) == "Portal":
+                hits[0].level_transition(level)
+                # print(self.coins)
 
     def update(self):
         # self.effects_trail()
@@ -427,6 +430,20 @@ class Coin(Sprite):
         self.rect.y = y *TILESIZE[1]
         # coin behavior
         pass
+
+class Portal(Sprite):
+    def __init__(self, game, x, y):
+        self.game = game
+        self.groups = game.all_sprites, game.all_portals
+        Sprite.__init__(self, self.groups)
+        self.image = pg.Surface(TILESIZE)
+        self.image.fill(YELLOW)
+        self.rect = self.image.get_rect()
+        self.rect.x = x * TILESIZE[0]
+        self.rect.y = y *TILESIZE[1]
+        # coin behavior
+    def level_transition(self, level):
+        print("i just tried to switch")
 
 class EffectTrail(Sprite):
     def __init__(self, game, x, y):

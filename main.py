@@ -51,6 +51,7 @@ class Game:
       self.all_sprites = pg.sprite.Group()
       self.all_mobs = pg.sprite.Group()
       self.all_coins = pg.sprite.Group()
+      self.all_portals = pg.sprite.Group()
       self.all_walls = pg.sprite.Group()
       self.all_projectiles = pg.sprite.Group()
       self.all_weapons = pg.sprite.Group()
@@ -68,6 +69,8 @@ class Game:
                self.player = Player(self, col, row)
             elif tile == 'M':
                Mob(self, col, row)
+            elif tile == 'O':
+               Portal(self, col, row)
       pg.mixer.music.load(path.join(self.snd_folder, 'Happy Tune.ogg'))
       pg.mixer.music.play(loops=-1)
    def run(self):

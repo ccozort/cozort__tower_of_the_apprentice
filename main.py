@@ -149,6 +149,8 @@ class Game:
                     self.running = False
                 if event.type == pg.KEYUP:
                     waiting = False
+
+   # runs while waiting for a key to be pressed
    def show_start_screen(self):
         # game splash/start screen
       #   pg.mixer.music.load(path.join(self.snd_dir, 'Yippee.ogg'))
@@ -158,6 +160,7 @@ class Game:
         pg.display.flip()
         self.wait_for_key()
         pg.mixer.music.fadeout(500)
+
 if __name__ == "__main__":
 #    creating an instance or instantiating the Game class
    g = Game()

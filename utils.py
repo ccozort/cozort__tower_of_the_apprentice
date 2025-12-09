@@ -44,3 +44,14 @@ class Spritesheet:
         image.blit(self.spritesheet, (0,0), (x,y, width, height))
         image = pg.transform.scale(image, (width, height))
         return image
+    
+def draw_shield_bar(surf, x, y, pct):
+    if pct < 0:
+        pct = 0
+    BAR_LENGTH = 100
+    BAR_HEIGHT = 10
+    fill = (pct / 100) * BAR_LENGTH
+    outline_rect = pg.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+    fill_rect = pg.Rect(x, y, fill, BAR_HEIGHT)
+    pg.draw.rect(surf, GREEN, fill_rect)
+    pg.draw.rect(surf, WHITE, outline_rect, 2)

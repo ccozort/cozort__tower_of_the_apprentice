@@ -14,6 +14,8 @@ from random import choice
 from os import path
 vec = pg.math.Vector2
 
+
+
 class Player(Sprite):
     def __init__(self, game, x, y):
         self.groups = game.all_sprites
@@ -217,6 +219,7 @@ class Player(Sprite):
         #     self.image = self.game.player_img
         #     # self.rect = self.image.get_rect()
         #     print("ready")
+        # draw_shield_bar(self.game.screen, 10, 10, self.health)
 
 class SpinningSword(pg.sprite.Sprite):
     def __init__(self, game, owner, orbit_radius=50, start_angle=0):
@@ -271,7 +274,7 @@ class SpinningSword(pg.sprite.Sprite):
 class SpinningSword(pg.sprite.Sprite):
     def __init__(self, game, player):
         self.game = game
-        self.groups = game.all_sprites, game.all_mobs
+        self.groups = game.all_sprites
         Sprite.__init__(self, self.groups)
         self.player = player
         # Create a simple sword image (a thin rectangle)
@@ -289,6 +292,7 @@ class SpinningSword(pg.sprite.Sprite):
         print('spinning sword created')
         
     def update(self):
+        
         if self.alpha <= 10:
             self.kill()
         if self.alpha:
@@ -319,10 +323,13 @@ class SpinningSword(pg.sprite.Sprite):
         rotation_angle_for_image = -self.angle - 180 # Adjust the 90-degree offset based on your sword image
         self.image = pg.Surface([self.scale_x, self.scale_y], pg.SRCALPHA)
         self.image = pg.transform.rotate(self.original_image, rotation_angle_for_image)
-        
+
         # Get a new rect with the correct center position after rotation
         self.rect = self.image.get_rect(center=self.rect.center)
-
+        hits = pg.sprite.spritecollide(self, self.game.all_mobs, True)
+        if hits:
+            # hits[0].kill()
+            print("I hit a mob!")
 class Mob(Sprite):
     def __init__(self, game, x, y):
         self.game = game
@@ -485,8 +492,13 @@ class Sword(Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x * TILESIZE[0]
         self.rect.y = y *TILESIZE[1]
+
     def update(self):
         self.rect.x = self.game.player.rect.x + self.game.player.dir.x * 32
+        hits = pg.sprite.spritecollide(self, self.game.all_mobs, True)
+        if hits:
+            print("I hit a mob!")
+        
         if self.game.player.dir.x < 0:
             self.rect.x = self.game.player.rect.x + self.game.player.dir.x * 64
             # pg.transform.flip(self.image, True, False)

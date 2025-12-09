@@ -71,6 +71,9 @@ class Game:
                Mob(self, col, row)
             elif tile == 'O':
                Portal(self, col, row)
+
+      for i in range(5):
+         Mob(self, randint(1, 20), randint(1,20))   
       pg.mixer.music.load(path.join(self.snd_folder, 'Happy Tune.ogg'))
       pg.mixer.music.play(loops=-1)
    def run(self):
@@ -112,6 +115,13 @@ class Game:
          print("I'm BROKE!")
 
 
+      if len(self.all_mobs) < 5:
+         self.spawn_mobs(1)
+     
+   def spawn_mobs(self, num_mobs):
+      for i in range(num_mobs):
+         Mob(self, randint(1, 20), randint(1,20))
+
    def draw_text(self, surface, text, size, color, x, y):
         font_name = pg.font.match_font('arial')
         font = pg.font.Font(font_name, size)
@@ -126,6 +136,7 @@ class Game:
       self.draw_text(self.screen, str(self.player.coins), 24, BLACK, 400, 100)
       self.draw_text(self.screen, str(self.time), 24, BLACK, 500, 100)
       self.all_sprites.draw(self.screen)
+      draw_shield_bar(self.screen, 10, 10, self.player.health)
       pg.display.flip()
 
    def wait_for_key(self):
